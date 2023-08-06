@@ -86,4 +86,5 @@ export const printDiff = (diff: Change[]) => {
       process.stdout.write(part.value);
     }
   }
+  process.stdout.write("\n")
 }

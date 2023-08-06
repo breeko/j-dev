@@ -8,7 +8,6 @@ import {SYSTEM_PROMPT} from "./prompts/system";
 import readline from "readline";
 import chalk from "chalk";
 import {CreateChatCompletionResponse, CreateCompletionResponseUsage} from "openai";
-import micoSpinner from "mico-spinner"
 import {RequestAccess, RequestChange, RequestCreate, RequestDelete, RequestFollowup} from "./types";
 
 const argv = yargs(hideBin(process.argv))
@@ -16,7 +15,7 @@ const argv = yargs(hideBin(process.argv))
     prompt: {type: 'string', demandOption: true, describe: 'The prompt for the AI'},
     dir: {type: 'string', default: process.cwd(), describe: 'The directory of the project'},
     model: {type: 'string', default: 'gpt-4', describe: 'The model to use'},
-    y: {type: 'boolean', default: false, describe: 'Automatically confirm all prompts'},
+    y: {type: 'boolean', default: false, describe: 'Automatically confirm all file access requests'},
     maxIter: {type: "number", default: 10, describe: "The maximum number of iterations"}
   }).parseSync();
 
@@ -25,12 +24,17 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-async function confirm(response: RequestChange | RequestCreate | RequestDelete | RequestAccess, prefix: string): Promise<{
+async function confirm(
+  request: string | undefined,
+  response: RequestChange | RequestCreate | RequestDelete | RequestAccess,
+  prefix: string,
+  strict: boolean
+): Promise<{
   confirm: boolean,
   comment: string | undefined
 }> {
-  const prompt = `${prefix} Do you want to ${response.type} file ${response.path}? (y)es, (n)o, (c)omment or (v)iew response `
-  if (argv.y) {
+  const prompt = `${prefix} Do you want to ${response.type} file ${response.path}? (y)es, (n)o, (c)omment, (v)iew response or view (r)equest `
+  if (!strict && argv.y) {
     return {confirm: true, comment: undefined};
   }
 
@@ -49,6 +53,9 @@ async function confirm(response: RequestChange | RequestCreate | RequestDelete |
           });
         } else if (lowerCaseAnswer === 'v' || lowerCaseAnswer === 'view') {
           console.log(response.raw)
+          return questionFunc(prompt)
+        } else if (lowerCaseAnswer === 'r') {
+          console.log(request)
           return questionFunc(prompt)
         } else {
           console.log("Invalid answer. Please respond with 'y', 'yes', 'n', 'no', 'c' or 'comment'.");
@@ -88,13 +95,10 @@ async function main() {
   while (iter < argv.maxIter) {
     iter += 1
     const response = await getGptResponse(messages, argv.model);
-    const spinner = micoSpinner('Asking...', {stream: process.stdout}).start()
     if (response === undefined) {
       console.log("Something went wrong...")
-      spinner.fail()
       break
     }
-    spinner.succeed()
     updateUsage(usage, response)
     const prefix = chalk.green(`[${iter} / ${argv.maxIter}, tokens ${usage.total_tokens.toLocaleString()}]`)
     messages.push({role: 'assistant', content: response?.value});
@@ -103,7 +107,7 @@ async function main() {
       const parsed = parseResponse(response.value, argv.dir)
       if (parsed.type === "access") {
         // Access
-        const res = await confirm(parsed,prefix)
+        const res = await confirm(messages[messages.length - 2].content, parsed, prefix, false)
         if (res.confirm) {
           const contents = readFile(parsed.path, true);
           messages.push({role: 'user', content: contents});
@@ -113,7 +117,7 @@ async function main() {
       } else if (parsed.type === "change") {
         // Change
         printDiff(parsed.diff)
-        const res = await confirm(parsed,prefix)
+        const res = await confirm(messages[messages.length - 2].content, parsed, prefix, true)
         if (res.confirm) {
           writeFile(parsed.path, parsed.content)
           messages.push({role: 'user', content: "File updated"});
@@ -122,7 +126,9 @@ async function main() {
         }
       } else if (parsed.type === "create") {
         // Create
-        const res = await confirm(parsed,prefix)
+        process.stdout.write(chalk.green(parsed.content));
+        process.stdout.write("\n")
+        const res = await confirm(messages[messages.length - 2].content, parsed, prefix, true)
         if (res.confirm) {
           createFile(parsed.path, parsed.content)
           messages.push({role: 'user', content: "File created"});
@@ -131,7 +137,7 @@ async function main() {
         }
       } else if (parsed.type === "delete") {
         // Delete
-        const res = await confirm(parsed,prefix)
+        const res = await confirm(messages[messages.length - 2].content, parsed, prefix, true)
 
         if (res.confirm) {
           deleteFile(parsed.path)

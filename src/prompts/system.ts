@@ -24,6 +24,16 @@ export const SYSTEM_PROMPT = `
   const baz = 4
   \`\`\`
   
+  If you want to insert a row, make sure to return the contents of the prior row as it will replace that row.
+  
+  To add a line, specify the line numbers to change to be AFTER the last line:
+  
+  \`\`\`
+  REPLACE 3-3 src/foo.ts
+  const qux = 5
+  \`\`\`
+  
+  
   Understand the app before making edits and provide specific responses.
   A response should only include one request
   Wrap code in triple ticks (\`\`\`).

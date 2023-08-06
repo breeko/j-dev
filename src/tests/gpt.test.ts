@@ -152,23 +152,44 @@ describe('GPT functions', () => {
     ]);
     (fs.readFileSync as jest.Mock).mockReturnValue("const foo = 2")
 
-    const response = 'CREATE README.md\n' +
-      '```\n' +
-      'This is my README\n\n##Example usage\n```\nnode index.js\n```' +
-      '```\n'
 
-    const projectDir = '.';
 
-    const expected: ParsedResponse = {
-      type: "create",
-      path: "README.md",
-      content: 'This is my README\n\n##Example usage\n```\nnode index.js\n```',
-      raw: response,
-    }
+    it("correctly parses a CREATE with nested triple-ticks", () => {
+      const response = 'CREATE README.md\n' +
+          '```\n' +
+          'This is my README\n\n##Example usage\n```\nnode index.js\n```' +
+          '```\n'
 
-    it("correctly parses a CREATE with nested triple-ticks", () =>
+      const projectDir = '.';
+
+      const expected: ParsedResponse = {
+        type: "create",
+        path: "README.md",
+        content: 'This is my README\n\n##Example usage\n```\nnode index.js\n```',
+        raw: response,
+      }
       expect(parseResponse(response, projectDir)).toEqual(expected)
-    )
+    })
+
+
+    it("ignores text prior to the prompt", () => {
+      const response = 'This is how you create a the README\n' +
+          'CREATE README.md\n' +
+          '```\n' +
+          'This is my README\n\n##Example usage\n```\nnode index.js\n```' +
+          '```\n'
+
+      const projectDir = '.';
+
+      const expected: ParsedResponse = {
+        type: "create",
+        path: "README.md",
+        content: 'This is my README\n\n##Example usage\n```\nnode index.js\n```',
+        raw: response,
+      }
+      expect(parseResponse(response, projectDir)).toEqual(expected)
+    })
+
 
   });
 });

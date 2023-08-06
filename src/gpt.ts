@@ -87,7 +87,7 @@ export function parseResponse(response: string, projectDir: string): ParsedRespo
     return {type: 'follow-up', content, raw: response};
   }
 
-  const createMatch = response.match(/CREATE (.+?)\n+```(.*?\n)([\s\S]+)```$/m);
+  const createMatch = response.match(/^CREATE (.+?)\n+```(.*?\n)([\s\S]+)```$/m);
   if (createMatch) {
     // Create
     const path = createMatch[1];
