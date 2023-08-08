@@ -2,7 +2,7 @@
 
 J(unior)-dev is a command-line interface (CLI) application developed with TypeScript and Node.js. It helps write code in an existing project under the command of an AI OpenAI GPT model.
 
-[![asciicast](https://asciinema.org/a/O23EVL7f135uXhBvFSCRhtNHZ.svg)](https://asciinema.org/a/O23EVL7f135uXhBvFSCRhtNHZ)
+![j-dev demo](static/jdev-demo-1.gif)
 
 ## Main Features
 

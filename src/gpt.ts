@@ -91,7 +91,7 @@ const parseChange = (response: string, files: Set<string>): RequestChange[] => {
 
     const orig = readFile(path, false);
     const origByLine = orig.split("\n");
-    const updated = (origByLine.slice(0, startNum).concat(content).concat(origByLine.slice(startNum + 1, endNum))).join("\n");
+    const updated = (origByLine.slice(0, startNum).concat(content).concat(origByLine.slice(endNum + 1))).join("\n");
 
     const diff = createDiff(path, updated);
     parsed.push({
