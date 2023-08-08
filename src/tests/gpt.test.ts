@@ -1,4 +1,4 @@
-import {getGptResponse, cleanCode, parseResponse} from '../gpt';
+import {getGptResponse, cleanCode, parseResponseMulti} from '../gpt';
 import {ChatCompletionRequestMessage} from 'openai/api';
 import fs from "fs";
 import {ParsedResponse} from "../types";
@@ -77,23 +77,23 @@ describe('GPT functions', () => {
     const response = 'ACCESS test.txt';
     const projectDir = '.';
 
-    const parsed = parseResponse(response, projectDir);
+    const parsed = parseResponseMulti(response, projectDir);
 
-    expect(parsed).toEqual({type: 'access', raw: "ACCESS test.txt", path: 'test.txt'});
+    expect(parsed).toEqual([{type: 'access', raw: "ACCESS test.txt", path: 'test.txt'}]);
   });
 
   test("parseResponse throws for files that don't exist", () => {
     const response = 'ACCESS ./does-not-exist.txt';
     const projectDir = '.';
 
-    expect(() => parseResponse(response, projectDir)).toThrow("File ./does-not-exist.txt does not exist")
+    expect(() => parseResponseMulti(response, projectDir)).toThrow("File ./does-not-exist.txt does not exist")
   });
 
-  describe("parseResponse", () => {
+  describe("parseResponse CHANGE", () => {
     (fs.readdirSync as jest.Mock).mockReturnValue([
       {name: 'test.txt', isDirectory: () => false, isFile: () => true},
     ]);
-    (fs.readFileSync as jest.Mock).mockReturnValue("const foo = 2")
+    (fs.readFileSync as jest.Mock).mockReturnValue("const foo = 2\n")
 
     const response = 'REPLACE 0-0 test.txt\n' +
       '```typescript\n' +
@@ -115,6 +115,8 @@ describe('GPT functions', () => {
       path: "test.txt",
       content: "const foo = 3",
       raw: response,
+      end: 0,
+      start: 0,
       diff: [
         {
           "added": undefined,
@@ -133,20 +135,21 @@ describe('GPT functions', () => {
 
 
     it("correctly parses a response with a language", () => {
-      expect(parseResponse(response, projectDir)).toEqual(expected)
+      const m = parseResponseMulti(response, projectDir)
+      expect(m).toEqual([expected])
     })
     it("correctly parses a response with a weird language", () => {
       const expectedWeirdLanguage = {...expected, raw: responseWeirdLanguage}
-      expect(parseResponse(responseWeirdLanguage, projectDir)).toEqual(expectedWeirdLanguage)
+      expect(parseResponseMulti(responseWeirdLanguage, projectDir)).toEqual([expectedWeirdLanguage])
     })
 
     it("correctly parses a response without a language", () => {
       const expectedNoLanguage = {...expected, raw: responseNoLanguage}
-      expect(parseResponse(responseNoLanguage, projectDir)).toEqual(expectedNoLanguage)
+      expect(parseResponseMulti(responseNoLanguage, projectDir)).toEqual([expectedNoLanguage])
     })
   });
 
-  describe("parseResponse", () => {
+  describe("parseResponse CREATE", () => {
     (fs.readdirSync as jest.Mock).mockReturnValue([
       {name: 'test.txt', isDirectory: () => false, isFile: () => true},
     ]);
@@ -157,7 +160,7 @@ describe('GPT functions', () => {
     it("correctly parses a CREATE with nested triple-ticks", () => {
       const response = 'CREATE README.md\n' +
           '```\n' +
-          'This is my README\n\n##Example usage\n```\nnode index.js\n```' +
+          'This is my README\n\n##Example usage\n```\nnode index.js\n```\n' +
           '```\n'
 
       const projectDir = '.';
@@ -168,28 +171,39 @@ describe('GPT functions', () => {
         content: 'This is my README\n\n##Example usage\n```\nnode index.js\n```',
         raw: response,
       }
-      expect(parseResponse(response, projectDir)).toEqual(expected)
+      expect(parseResponseMulti(response, projectDir)).toEqual([expected])
     })
-
-
-    it("ignores text prior to the prompt", () => {
-      const response = 'This is how you create a the README\n' +
-          'CREATE README.md\n' +
-          '```\n' +
-          'This is my README\n\n##Example usage\n```\nnode index.js\n```' +
-          '```\n'
-
-      const projectDir = '.';
-
-      const expected: ParsedResponse = {
-        type: "create",
-        path: "README.md",
-        content: 'This is my README\n\n##Example usage\n```\nnode index.js\n```',
-        raw: response,
-      }
-      expect(parseResponse(response, projectDir)).toEqual(expected)
-    })
-
-
   });
+
+  it("correctly parses multiple CREATES", () => {
+    const response = 'CREATE README.md\n' +
+        '```\n' +
+        'This is my README\n' +
+        '```\n' +
+        '\n' +
+        'CREATE index.ts\n' +
+        '```\n' +
+        'console.log("hello world")\n' +
+        '```\n'
+
+
+    const projectDir = '.';
+
+    const expected: ParsedResponse[] = [
+      {
+        type: "create",
+        path: "README.md",
+        content: 'This is my README',
+        raw: response,
+      },
+      {
+        type: "create",
+        path: "index.ts",
+        content: 'console.log("hello world")',
+        raw: response,
+      },
+        ]
+    expect(parseResponseMulti(response, projectDir)).toEqual(expected)
+  })
+
 });

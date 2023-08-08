@@ -17,6 +17,8 @@ interface RequestAccess extends RequestBase{
 interface RequestChange extends RequestBase {
   type: "change"
   path: string
+  start: number
+  end: number
   content: string
   diff: Change[]
 }

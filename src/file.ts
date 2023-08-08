@@ -75,7 +75,8 @@ export const printDiff = (diff: Change[]) => {
   for (const part of diff) {
     // if the part is added, color it green
     if (part.added) {
-      process.stdout.write(chalk.green(part.value));
+      chalk.blue
+console.log(chalk.green(part.value));
     }
     // if the part is removed, color it red
     else if (part.removed) {

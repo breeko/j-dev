@@ -2,7 +2,7 @@
 
 J(unior)-dev is a command-line interface (CLI) application developed with TypeScript and Node.js. It helps write code in an existing project under the command of an AI OpenAI GPT model.
 
-![Demo](./static/example-update-readme-license.mov)
+[![asciicast](https://asciinema.org/a/O23EVL7f135uXhBvFSCRhtNHZ.svg)](https://asciinema.org/a/O23EVL7f135uXhBvFSCRhtNHZ)
 
 ## Main Features
 
@@ -42,6 +42,13 @@ Tokens used are tracked and made explicit in the responses. Too many tools are l
 ### Ability to work in a large existing codebase
 
 `j-dev` is meant to work in an existing codebase. It only communicates what is necessary for any given task while giving the LLM discretion as to what it needs to know. Access grants are controlled by the user 
+
+
+### Don't fight the LLM
+
+LLMs aren't perfect, at least not yet. While `j-dev` tries to be clear and simple with its instructions, it tries to instruct the LLM to perform tasks in the way it has been trained. For instance, it allows some flexibility in including a language when specifying code blocks and allows multiple requests in one response.
+
+When I tried stating conditions that go against what the LLM would naturally want to do, it would often ignore the rules anyway. So some flexibility is built in.
 
 
 ## Setup
@@ -95,7 +102,4 @@ jdev --prompt="update the readme to include command line arguments from the app"
 Please note that you must at least pass the `prompt` argument.
 
 ## License
-
-This project is licensed under the terms of the MIT license. See the [LICENSE](./LICENSE) file.
-
-For the text and conditions of the license you can check out [MIT License](https://opensource.org/licenses/MIT)
+This project is licensed under the terms of the MIT License.
