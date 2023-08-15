@@ -34,7 +34,7 @@ This project attempts to correct some of the limitations of such tools
 ### Transparency and customization
 j-dev is meant to be fully transparent about what its doing. This means you should clearly see what prompt is being provided and what prompt is being returned.
 
-The system prompts are stored in the `/src/prompts` folder. The tool will also try to parse the reply and act on it accordingly. However, the response prompt is always available to the user by responding `(v)iew response`. The request can be accessed by responding `view (r)equest`
+The system prompts are stored in the [/src/prompts](https://github.com/breeko/j-dev/blob/master/src/prompts) folder. The tool will also try to parse the reply and act on it accordingly. However, the response prompt is always available to the user by responding `(v)iew response`. The request can be accessed by responding `view (r)equest`
 
 ```bash
 > yarn start --prompt "update the readme with an MIT license"
@@ -74,10 +74,10 @@ When I tried stating conditions that go against what the LLM would naturally wan
 ![Smooth example](static/not-so-smooth.gif)
 
 
-Here I ask jdev to update readme with command line arguments from the app.
+Here I ask `j-dev` to update readme with command line arguments from the app.
 This sometimes works correctly, but in the example below, it fails.
 
-First the LLM first messes up response format, which jdev handles.
+First the LLM first messes up response format, which `j-dev` handles.
 
 Then it correctly requests context by reading src/index.ts and extracts the correct command line arguments.
 
@@ -86,7 +86,7 @@ Here is where I can comment and remind it to understand the context.
 
 Finally, the LLM understands the context of the relevant files and inserts the table in the appropriate place.
 
-jdev is designed to work with imperfect LLMs and provide full transparency into what is going in.
+`j-dev` is designed to work with imperfect LLMs and provide full transparency into what is going in.
 At any point in time you can view the request, the response or comment.
 
 
