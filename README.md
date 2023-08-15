@@ -2,7 +2,22 @@
 
 J(unior)-dev is a command-line interface (CLI) application developed with TypeScript and Node.js. It helps write code in an existing project under the command of an AI OpenAI GPT model.
 
-![j-dev demo](static/jdev-demo-1.gif)
+[![asciicast](https://asciinema.org/a/Lm5RaNq1LskJ6Yk5gijvXjCcg.svg)](https://asciinema.org/a/Lm5RaNq1LskJ6Yk5gijvXjCcg)
+
+## Table of Contents
+1. [Main Features](#main-features)
+2. [Principles](#principles)
+    - [Transparency and customization](#transparency-and-customization)
+    - [Respect tokens](#respect-tokens)
+    - [Ability to work in a large existing codebase](#ability-to-work-in-a-large-existing-codebase)
+    - [Don't fight the LLM](#dont-fight-the-llm)
+3. [Iterating with j-dev](#iterating-with-j-dev)
+4. [Setup](#setup)
+   - [Required Environment Variables](#required-environment-variables)
+   - [Local Setup](#local-setup)
+5. [Example Usage](#example-usage)
+6. [Command Line Arguments](#command-line-arguments)
+7. [License](#license)
 
 ## Main Features
 
@@ -51,6 +66,30 @@ LLMs aren't perfect, at least not yet. While `j-dev` tries to be clear and simpl
 When I tried stating conditions that go against what the LLM would naturally want to do, it would often ignore the rules anyway. So some flexibility is built in.
 
 
+## Iterating with j-dev
+
+### A not-so-smooth example
+
+
+[![asciicast](https://asciinema.org/a/yNJeVabVq9dr5okGXtXXc5QOr.svg)](https://asciinema.org/a/yNJeVabVq9dr5okGXtXXc5QOr)
+
+
+Here I ask jdev to update readme with command line arguments from the app.
+This sometimes works correctly, but in the example below, it fails.
+
+First the LLM first messes up response format, which jdev handles.
+
+Then it correctly requests context by reading src/index.ts and extracts the correct command line arguments.
+
+But then it doesn't bother to read the README and just inserts the content on the top of the file.
+Here is where I can comment and remind it to understand the context.
+
+Finally, the LLM understands the context of the relevant files and inserts the table in the appropriate place.
+
+jdev is designed to work with imperfect LLMs and provide full transparency into what is going in.
+At any point in time you can view the request, the response or comment.
+
+
 ## Setup
 
 ### Required Environment Variables
@@ -69,22 +108,9 @@ To set up on your local machine:
 4. Compile the TypeScript code using `tsc` command.
 5. Run the application: `npm start` or `yarn start`.
 
-## Using Command-Line Arguments
-
-j-dev supports the passing of command-line arguments for enhanced functionality and ease of use.
-
-The following arguments are available:
-
-| Argument | Description | Type | Default |
-| -------- | ----------- | ---- | ------- |
-| `prompt` | A string that serves as the prompt for the AI. (Demand Option) | String | - |
-| `dir` | A string indicating the directory of the project | String | Current working directory |
-| `model` | A string representing the model to use | String | 'gpt-4' |
-| `y` | A boolean to automatically confirm all prompts | Boolean | false |
-| `maxIter` | A number that specifies the maximum number of iterations | Number | 10 |
-
 ## Example Usage
 
+Here is how you can use `j-dev` with command-line arguments in a practical setting:
 Here is how you can use `j-dev` with command-line arguments in a practical setting:
 
 1. To instruct the AI with a prompt and confirm all prompts automatically:
@@ -100,6 +126,15 @@ jdev --prompt="update the readme to include command line arguments from the app"
 ```
 
 Please note that you must at least pass the `prompt` argument.
+## Command Line Arguments
 
+| Argument | Description | Default Value |
+| -------- | ----------- | ------------- |
+| prompt | The prompt for the AI | Required Parameter |
+| dir   | The directory of the project | Current Working Directory |
+| model | The model to use | gpt-4 |
+| y     | Automatically confirm all file access requests | false |
+| maxIter | The maximum number of iterations | 10 |
 ## License
-This project is licensed under the terms of the MIT License.
+
+This project is licensed under the MIT License - see the [MIT License](https://opensource.org/licenses/MIT) for details.

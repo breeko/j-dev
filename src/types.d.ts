@@ -20,7 +20,6 @@ interface RequestChange extends RequestBase {
   start: number
   end: number
   content: string
-  diff: Change[]
 }
 
 interface RequestFollowup extends RequestBase {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import yargs from 'yargs/yargs';
 import {hideBin} from 'yargs/helpers';
-import {getGptResponse, parseResponse, parseResponseMulti} from './gpt';
+import {getGptResponse, parseResponseMulti} from './gpt';
 import {readFile, writeFile, readDirectory, createFile, deleteFile, printDiff} from './file';
 import {ChatCompletionRequestMessage} from "openai/api";
 import {SYSTEM_PROMPT} from "./prompts/system";
@@ -24,20 +24,23 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-async function confirm(
+async function confirm(props: {
+    repeat?: () => void,
     request: string | undefined,
     response: RequestChange | RequestCreate | RequestDelete | RequestAccess,
     prefix: string,
     strict: boolean
+}
 ): Promise<{
     confirm: boolean,
     comment: string | undefined
 }> {
+    const {repeat, request, response, prefix, strict} = props
     const prompt = `${prefix} Do you want to ${response.type} file ${response.path}? (y)es, (n)o, (c)omment, (v)iew response or view (r)equest `
     if (!strict && argv.y) {
         return {confirm: true, comment: undefined};
     }
-
+    repeat?.()
     return new Promise((resolve) => {
         const questionFunc = (prompt: string) => {
             rl.question(prompt, (answer) => {
@@ -57,6 +60,8 @@ async function confirm(
                 } else if (lowerCaseAnswer === 'r') {
                     console.log(request)
                     return questionFunc(prompt)
+                } else if (lowerCaseAnswer === "?" && repeat) {
+                    repeat()
                 } else {
                     console.log("Invalid answer. Please respond with 'y', 'yes', 'n', 'no', 'c' or 'comment'.");
                     questionFunc(prompt);
@@ -84,7 +89,7 @@ const updateUsage = (orig: CreateCompletionResponseUsage, request: Pick<CreateCh
 
 async function main() {
     const files = readDirectory(argv.dir);
-    const initialPrompt = argv.prompt + '\nBelow is my current folder structure:\n```\n' + files.join('\n') + "```"
+    const initialPrompt = argv.prompt + '\nBelow is my current folder structure:\n```\n' + files.join('\n') + "\n```"
     const messages: ChatCompletionRequestMessage[] = [
         {role: 'system', content: SYSTEM_PROMPT},
         {role: 'user', content: initialPrompt},
@@ -104,16 +109,21 @@ async function main() {
             break
         }
         updateUsage(usage, response)
-        const prefix = chalk.green(`[${iter} / ${argv.maxIter}, tokens ${usage.total_tokens.toLocaleString()}]`)
+        const prefix = chalk.magentaBright(`[${iter} / ${argv.maxIter}, tokens ${usage.total_tokens.toLocaleString()}]`)
         messages.push({role: 'assistant', content: response?.value});
 
         try {
             const parsedResponses = parseResponseMulti(response.value, argv.dir)
+            const priorMessage = messages[messages.length - 2]
             for (const parsed of parsedResponses) {
-
                 if (parsed.type === "access") {
                     // Access
-                    const res = await confirm(messages[messages.length - 2].content, parsed, prefix, false)
+                    const res = await confirm({
+                        request: priorMessage.content,
+                        response: parsed,
+                        prefix,
+                        strict: false
+                    })
                     if (res.confirm) {
                         const contents = readFile(parsed.path, true);
                         messages.push({role: 'user', content: contents});
@@ -125,8 +135,13 @@ async function main() {
                     }
                 } else if (parsed.type === "change") {
                     // Change
-                    printDiff(parsed.diff)
-                    const res = await confirm(messages[messages.length - 2].content, parsed, prefix, true)
+                    const res = await confirm({
+                        repeat: () => printDiff(parsed.path, parsed.content),
+                        request: priorMessage.content,
+                        response: parsed,
+                        prefix,
+                        strict: true
+                    })
                     const responsePrefix = `[${parsed.path} ${parsed.start}-${parsed.end}]`
                     if (res.confirm) {
                         writeFile(parsed.path, parsed.content)
@@ -139,31 +154,46 @@ async function main() {
                     }
                 } else if (parsed.type === "create") {
                     // Create
-                    process.stdout.write(chalk.green(parsed.content));
-                    process.stdout.write("\n")
-                  const responsePrefix = `[${parsed.path}]`
-                    const res = await confirm(messages[messages.length - 2].content, parsed, prefix, true)
+                    const responsePrefix = `[${parsed.path}]`
+                    const res = await confirm({
+                        repeat: () => console.log(chalk.green(parsed.content)),
+                        request: priorMessage.content,
+                        response: parsed,
+                        prefix,
+                        strict: true
+                    })
                     if (res.confirm) {
                         createFile(parsed.path, parsed.content)
                         messages.push({role: 'user', content: `${responsePrefix} File created`});
                     } else {
-                        messages.push({role: 'user', content: `${responsePrefix} ${res.comment || "Create request denied"}`});
+                        messages.push({
+                            role: 'user',
+                            content: `${responsePrefix} ${res.comment || "Create request denied"}`
+                        });
                     }
                 } else if (parsed.type === "delete") {
                     // Delete
-                    const res = await confirm(messages[messages.length - 2].content, parsed, prefix, true)
-                  const responsePrefix = `[${parsed.path}]`
+                    const res = await confirm({
+                        request: priorMessage.content,
+                        response: parsed,
+                        prefix,
+                        strict: true
+                    })
+                    const responsePrefix = `[${parsed.path}]`
 
 
-                  if (res.confirm) {
+                    if (res.confirm) {
                         deleteFile(parsed.path)
                         messages.push({role: 'user', content: `${responsePrefix} File deleted`});
                     } else {
-                        messages.push({role: 'user', content: `${responsePrefix} ${res.comment || "Delete request denied"}`});
+                        messages.push({
+                            role: 'user',
+                            content: `${responsePrefix} ${res.comment || "Delete request denied"}`
+                        });
                     }
                 } else if (parsed.type === "follow-up") {
                     // Follow-up
-                    await askQuestion(parsed, prefix).then(content => {
+                    await askQuestion(parsed, "").then(content => {
                         messages.push({role: 'user', content});
                     })
                 } else if (parsed.type === "complete") {
@@ -173,15 +203,10 @@ async function main() {
                 }
             }
         } catch (e: unknown) {
-            // console.log(response)
-            // @ts-ignore
-            console.log(messages)
-            // console.log(JSON.stringify(e.data.error))
-            iter = argv.maxIter
-            break
+            console.log(`${prefix} Invalid response`)
             messages.push({
                 role: "user",
-                content: `${(e as Error).message}. Please make sure to responses are restricted to those listed in the system prompt: ${SYSTEM_PROMPT}`
+                content: `${(e as Error).message}. Please make sure responses are restricted to those listed in the system prompt`
             })
         }
     }

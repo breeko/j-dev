@@ -1,4 +1,4 @@
-import {getGptResponse, cleanCode, parseResponseMulti} from '../gpt';
+import {getGptResponse, parseResponseMulti} from '../gpt';
 import {ChatCompletionRequestMessage} from 'openai/api';
 import fs from "fs";
 import {ParsedResponse} from "../types";
@@ -39,38 +39,6 @@ describe('GPT functions', () => {
     const response = await getGptResponse(messages, model);
 
     expect(response?.choices?.[0].message!.content as string).toBe('Test response');
-  });
-
-  test('cleanCode only keeps the text inside the triple ticks with language name', () => {
-    const code = 'const a = 1\n' +
-      '\n' +
-      '\n' +
-      'const b = 2\n' +
-      '# here is a comment' +
-      '\n' +
-      '\n';
-
-    const block = `\`\`\`python\n${code}\n\`\`\``
-
-    const cleaned = cleanCode(block);
-
-    expect(cleaned).toEqual(code);
-  });
-
-  test('cleanCode only keeps the text inside the triple ticks without language name', () => {
-    const code = 'const a = 1\n' +
-      '\n' +
-      '\n' +
-      'const b = 2\n' +
-      '# here is a comment' +
-      '\n' +
-      '\n';
-
-    const block = `\`\`\`\n${code}\n\`\`\``
-
-    const cleaned = cleanCode(block);
-
-    expect(cleaned).toEqual(code);
   });
 
   test('parseResponse requests access to files that exist', () => {
@@ -117,20 +85,6 @@ describe('GPT functions', () => {
       raw: response,
       end: 0,
       start: 0,
-      diff: [
-        {
-          "added": undefined,
-          "count": 1,
-          "removed": true,
-          "value": "const foo = 2",
-        },
-        {
-          "added": true,
-          "count": 1,
-          "removed": undefined,
-          "value": "const foo = 3",
-        },
-      ]
     }
 
 
