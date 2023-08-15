@@ -2,7 +2,7 @@
 
 J(unior)-dev is a command-line interface (CLI) application developed with TypeScript and Node.js. It helps write code in an existing project under the command of an AI OpenAI GPT model.
 
-[![asciicast](https://asciinema.org/a/Lm5RaNq1LskJ6Yk5gijvXjCcg.svg)](https://asciinema.org/a/Lm5RaNq1LskJ6Yk5gijvXjCcg)
+![Smooth example](static/smooth.gif)
 
 ## Table of Contents
 1. [Main Features](#main-features)
@@ -71,7 +71,7 @@ When I tried stating conditions that go against what the LLM would naturally wan
 ### A not-so-smooth example
 
 
-[![asciicast](https://asciinema.org/a/yNJeVabVq9dr5okGXtXXc5QOr.svg)](https://asciinema.org/a/yNJeVabVq9dr5okGXtXXc5QOr)
+![Smooth example](static/not-so-smooth.gif)
 
 
 Here I ask jdev to update readme with command line arguments from the app.
